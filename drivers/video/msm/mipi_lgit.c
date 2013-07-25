@@ -32,7 +32,7 @@ static struct dsi_buf lgit_tx_buf;
 static struct dsi_buf lgit_rx_buf;
 static int skip_init;
 
-#ifdef CONFIG_GAMMA_CONTROL
+#ifdef CONFIG_FRANCO_GAMMA_CONTROL
 static DEFINE_MUTEX(color_lock);
 struct dsi_cmd_desc new_color_vals[33];
 int get_whites(void);
@@ -90,7 +90,7 @@ static int mipi_lgit_lcd_on(struct platform_device *pdev)
 
 	MIPI_OUTP(MIPI_DSI_BASE + 0x38, 0x10000000);
 	ret = mipi_dsi_cmds_tx(&lgit_tx_buf,
-#ifdef CONFIG_GAMMA_CONTROL
+#ifdef CONFIG_FRANCO_GAMMA_CONTROL
 			new_color_vals,
 #else
 			mipi_lgit_pdata->power_on_set_1,
@@ -602,7 +602,7 @@ static DEVICE_ATTR(refresh_screen, 0644, refresh_screen_show, refresh_screen_go)
 
 /******************* franco interface *****************************/
 
-#ifdef CONFIG_GAMMA_CONTROL
+#ifdef CONFIG_FRANCO_GAMMA_CONTROL
 void update_vals(int array_pos)
 {
 	int val = 0;
