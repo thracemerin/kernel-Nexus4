@@ -35,13 +35,6 @@ static int skip_init;
 #ifdef CONFIG_FRANCO_GAMMA_CONTROL
 static DEFINE_MUTEX(color_lock);
 struct dsi_cmd_desc new_color_vals[33];
-int get_whites(void);
-int get_mids(void);
-int get_blacks(void);
-int get_contrast(void);
-int get_brightness(void);
-int get_saturation(void);
-int get_greys(void);
 #endif
 
 #define DSV_ONBST 57
@@ -603,46 +596,54 @@ static DEVICE_ATTR(refresh_screen, 0644, refresh_screen_show, refresh_screen_go)
 /******************* franco interface *****************************/
 
 #ifdef CONFIG_FRANCO_GAMMA_CONTROL
-void update_vals(int array_pos)
+#define RED 1
+#define GREEN 2
+#define BLUE 3
+#define CONTRAST 5
+#define BRIGHTNESS 6
+#define SATURATION 7
+
+void update_vals(int type, int array_pos, int val)
 {
-	int val = 0;
 	int ret = 0;
 	int i;
 
-	switch(array_pos) {
-		case 1:
-			val = get_greys();
+	switch(type) {
+		case RED:
+			new_color_vals[5].payload[array_pos] = val;
+			new_color_vals[6].payload[array_pos] = val;
 			break;
-		case 2:
-			val = get_mids();
+		case GREEN:
+			new_color_vals[7].payload[array_pos] = val;
+			new_color_vals[8].payload[array_pos] = val;
 			break;
-		case 3:
-			val = get_blacks();
+		case BLUE:
+			new_color_vals[9].payload[array_pos] = val;
+			new_color_vals[9].payload[array_pos] = val;
 			break;
-		case 5:
-			val = get_contrast();
+		case CONTRAST:
+			for (i = 5; i <= 10; i++)
+				new_color_vals[i].payload[type] = val;
 			break;
-		case 6:
-			val = get_brightness();
+		case BRIGHTNESS:
+			for (i = 5; i <= 10; i++)
+				new_color_vals[i].payload[type] = val;
 			break;
-		case 7:
-			val = get_saturation();
-			break;
-		case 8:
-			val = get_whites();
+		case SATURATION:
+			for (i = 5; i <= 10; i++)
+				new_color_vals[i].payload[type] = val;
 			break;
 		default:
 			pr_info("%s - Wrong value - abort.\n", __FUNCTION__);
 			return;
 	}
-	
-	for (i = 5; i <= 10; i++)
-		new_color_vals[i].payload[array_pos] = val;
 
 	pr_info("%s - Updating display GAMMA settings.\n", __FUNCTION__);
-	
+
 	mutex_lock(&color_lock);
-	msleep(20);
+
+	//blocks the CPU so it doesn't end up in a race condition and panics the system
+	mdelay(20);
 	MIPI_OUTP(MIPI_DSI_BASE + 0x38, 0x10000000);
 	ret = mipi_dsi_cmds_tx(&lgit_tx_buf,
 			new_color_vals,
@@ -652,7 +653,6 @@ void update_vals(int array_pos)
 		pr_err("%s: failed to transmit power_on_set_1 cmds\n", __func__);
 	mutex_unlock(&color_lock);
 }
-
 EXPORT_SYMBOL(update_vals);
 #endif
 
